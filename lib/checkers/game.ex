@@ -48,7 +48,7 @@ defmodule Checkers.Game do
     new_board =
       board
       |> Board.move_piece(from, to)
-      |> maybe_remove_captured(from, to)
+      |> maybe_remove_captured(from, to, is_jump)
       |> maybe_promote(to)
 
     piece = Board.piece_at(new_board, to)
@@ -64,14 +64,12 @@ defmodule Checkers.Game do
     end
   end
 
-  @spec maybe_remove_captured(Board.t(), Board.position(), Board.position()) :: Board.t()
-  defp maybe_remove_captured(board, {from_row, _} = from, {to_row, _} = to) do
-    if abs(to_row - from_row) == 2 do
-      Board.remove_piece(board, Board.midpoint(from, to))
-    else
-      board
-    end
+  @spec maybe_remove_captured(Board.t(), Board.position(), Board.position(), boolean()) :: Board.t()
+  defp maybe_remove_captured(board, from, to, true = _is_jump) do
+    Board.remove_piece(board, Board.midpoint(from, to))
   end
+
+  defp maybe_remove_captured(board, _from, _to, false = _is_jump), do: board
 
   @spec maybe_promote(Board.t(), Board.position()) :: Board.t()
   defp maybe_promote(board, {row, _col} = pos) do
