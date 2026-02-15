@@ -457,4 +457,95 @@ defmodule Checkers.GameTest do
       assert {:ok, _game} = Game.move(game, {2, 1}, {3, 2})
     end
   end
+
+  describe "win conditions" do
+    test "dark wins by capturing the last light piece" do
+      # Dark at {5,4} jumps light at {6,5}, landing at {7,6} — no light pieces remain
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | d |   | . |   |
+      # 6 |   | . |   | . |   | l |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({5, 4}, :dark)
+        |> Board.put_piece({6, 5}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {5, 4}, {7, 6})
+
+      assert game.status == :dark_wins
+      assert Board.piece_at(game.board, {6, 5}) == nil
+    end
+
+    test "light wins by capturing the last dark piece" do
+      # Light at {2,3} jumps dark at {1,2}, landing at {0,1} — no dark pieces remain
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | d |   | . |   | . |   |
+      # 2 |   | . |   | l |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 3}, :light)
+        |> Board.put_piece({1, 2}, :dark)
+
+      game = %Game{board: board, turn: :light, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {2, 3}, {0, 1})
+
+      assert game.status == :light_wins
+      assert Board.piece_at(game.board, {1, 2}) == nil
+    end
+
+    test "dark wins when light has pieces but no legal moves" do
+      # Light at {1,0} is blocked: only forward diagonal is {0,1} which is
+      # occupied by dark, and a jump would land at {-1,2} (off board).
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | d |   | . |   | . |   | . |
+      # 1 | l |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | d |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      #
+      # Dark at {6,1} makes a simple move to {7,2}; light has no legal moves → dark wins.
+      board =
+        %Board{}
+        |> Board.put_piece({1, 0}, :light)
+        |> Board.put_piece({0, 1}, :dark)
+        |> Board.put_piece({6, 1}, :dark)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {6, 1}, {7, 2})
+
+      assert game.status == :dark_wins
+    end
+
+    test "rejects moves when the game is already over" do
+      # Game is already won — no more moves allowed
+      board =
+        %Board{}
+        |> Board.put_piece({3, 2}, :dark)
+
+      game = %Game{board: board, turn: :dark, status: :dark_wins, moves: []}
+
+      assert {:error, :game_over} = Game.move(game, {3, 2}, {4, 3})
+    end
+  end
 end

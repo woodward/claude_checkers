@@ -13,6 +13,7 @@ defmodule Checkers.Rules do
           | :invalid_move
           | :must_continue_jump
           | :jump_available
+          | :game_over
 
   @doc """
   Validates whether a move from `from` to `to` is legal for the given board and turn.
@@ -60,6 +61,25 @@ defmodule Checkers.Rules do
   def any_jumps_for_color?(%Board{pieces: pieces} = board, turn) do
     Enum.any?(pieces, fn {pos, piece} ->
       color(piece) == turn and any_jumps?(board, piece, pos)
+    end)
+  end
+
+  @doc """
+  Returns true if the given color has any legal move (simple or jump).
+  """
+  @spec any_legal_moves?(Board.t(), color()) :: boolean()
+  def any_legal_moves?(%Board{pieces: pieces} = board, turn) do
+    Enum.any?(pieces, fn {pos, piece} ->
+      color(piece) == turn and (any_simple_moves?(board, piece, pos) or any_jumps?(board, piece, pos))
+    end)
+  end
+
+  @spec any_simple_moves?(Board.t(), Board.piece(), Board.position()) :: boolean()
+  defp any_simple_moves?(board, piece, {row, col}) do
+    move_targets = [{row + 1, col + 1}, {row + 1, col - 1}, {row - 1, col + 1}, {row - 1, col - 1}]
+
+    Enum.any?(move_targets, fn {to_row, to_col} = to ->
+      on_board?(to_row, to_col) and valid_simple_move?(piece, {row, col}, to) and Board.piece_at(board, to) == nil
     end)
   end
 

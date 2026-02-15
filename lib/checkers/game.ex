@@ -32,6 +32,10 @@ defmodule Checkers.Game do
   Returns `{:ok, updated_game}` or `{:error, reason}`.
   """
   @spec move(t(), Board.position(), Board.position()) :: {:ok, t()} | {:error, Rules.error()}
+  def move(%__MODULE__{status: status}, _from, _to) when status != :playing do
+    {:error, :game_over}
+  end
+
   def move(%__MODULE__{must_jump_from: must_jump}, from, _to) when must_jump != nil and from != must_jump do
     {:error, :must_continue_jump}
   end
@@ -74,8 +78,11 @@ defmodule Checkers.Game do
     if is_jump and Rules.any_jumps?(new_board, piece, to) do
       {:ok, %{game | board: new_board, must_jump_from: to, moves: [{from, to} | game.moves]}}
     else
+      next = next_turn(turn)
+      status = if Rules.any_legal_moves?(new_board, next), do: :playing, else: winner(turn)
+
       {:ok,
-       %{game | board: new_board, turn: next_turn(turn), must_jump_from: nil, moves: [{from, to} | game.moves]}}
+       %{game | board: new_board, turn: next, status: status, must_jump_from: nil, moves: [{from, to} | game.moves]}}
     end
   end
 
@@ -106,4 +113,8 @@ defmodule Checkers.Game do
   @spec next_turn(Rules.color()) :: Rules.color()
   defp next_turn(:dark), do: :light
   defp next_turn(:light), do: :dark
+
+  @spec winner(Rules.color()) :: status()
+  defp winner(:dark), do: :dark_wins
+  defp winner(:light), do: :light_wins
 end
