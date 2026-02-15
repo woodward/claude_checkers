@@ -105,10 +105,82 @@ defmodule Checkers.Rules do
   end
 
   @doc """
+  Returns the list of legal destination positions for the piece at `pos`.
+
+  Respects mandatory capture: if any piece of the same color can jump,
+  only jump destinations are returned.
+  """
+  @spec legal_moves(Board.t(), color(), Board.position()) :: [Board.position()]
+  def legal_moves(%Board{} = board, turn, {row, col} = pos) do
+    piece = Board.piece_at(board, pos)
+
+    if piece == nil or color(piece) != turn do
+      []
+    else
+      jumps = jump_destinations(board, piece, pos)
+
+      if jumps != [] do
+        jumps
+      else
+        if any_jumps_for_color?(board, turn) do
+          # Mandatory capture: another piece can jump, so no simple moves allowed
+          []
+        else
+          simple_destinations(board, piece, {row, col})
+        end
+      end
+    end
+  end
+
+  @doc """
+  Returns positions of all pieces of the given color that have at least
+  one legal move. Respects mandatory capture: if any piece can jump,
+  only pieces with jumps are returned.
+  """
+  @spec movable_pieces(Board.t(), color()) :: [Board.position()]
+  def movable_pieces(%Board{pieces: pieces} = board, turn) do
+    own_pieces =
+      pieces
+      |> Enum.filter(fn {_pos, piece} -> color(piece) == turn end)
+      |> Enum.map(fn {pos, _piece} -> pos end)
+
+    jumpers =
+      Enum.filter(own_pieces, fn pos ->
+        piece = Board.piece_at(board, pos)
+        any_jumps?(board, piece, pos)
+      end)
+
+    if jumpers != [] do
+      Enum.sort(jumpers)
+    else
+      own_pieces
+      |> Enum.filter(fn pos ->
+        piece = Board.piece_at(board, pos)
+        any_simple_moves?(board, piece, pos)
+      end)
+      |> Enum.sort()
+    end
+  end
+
+  @doc """
   Returns true if the move from `from` to `to` is a jump (row distance of 2).
   """
   @spec jump?(Board.position(), Board.position()) :: boolean()
   def jump?({from_row, _}, {to_row, _}), do: abs(to_row - from_row) == 2
+
+  @spec jump_destinations(Board.t(), Board.piece(), Board.position()) :: [Board.position()]
+  defp jump_destinations(board, piece, {row, col}) do
+    [{row + 2, col + 2}, {row + 2, col - 2}, {row - 2, col + 2}, {row - 2, col - 2}]
+    |> Enum.filter(fn to -> valid_jump?(board, piece, {row, col}, to) end)
+  end
+
+  @spec simple_destinations(Board.t(), Board.piece(), Board.position()) :: [Board.position()]
+  defp simple_destinations(board, piece, {row, col}) do
+    [{row + 1, col + 1}, {row + 1, col - 1}, {row - 1, col + 1}, {row - 1, col - 1}]
+    |> Enum.filter(fn {to_row, to_col} = to ->
+      on_board?(to_row, to_col) and valid_simple_move?(piece, {row, col}, to) and Board.piece_at(board, to) == nil
+    end)
+  end
 
   @spec any_simple_moves?(Board.t(), Board.piece(), Board.position()) :: boolean()
   defp any_simple_moves?(board, piece, {row, col}) do

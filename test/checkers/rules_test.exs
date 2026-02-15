@@ -393,4 +393,217 @@ defmodule Checkers.RulesTest do
       assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {5, 6}, {7, 8})
     end
   end
+
+  describe "legal_moves/3" do
+    test "returns both diagonal moves for a checker in the open" do
+      # Dark checker at {3,2} with no pieces around — two forward diagonals
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | d |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({3, 2}, :dark)
+
+      moves = Rules.legal_moves(board, :dark, {3, 2})
+
+      assert Enum.sort(moves) == [{4, 1}, {4, 3}]
+    end
+
+    test "returns jump destinations when jumps are available" do
+      # Dark at {2,1} with light at {3,2} — can jump to {4,3}
+      # Also has a simple move to {3,0} (but jumps are mandatory,
+      # so legal_moves should return only jumps when available)
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      moves = Rules.legal_moves(board, :dark, {2, 1})
+
+      assert moves == [{4, 3}]
+    end
+
+    test "returns all four directions for a king in the open" do
+      # Dark king at {4,3} with nothing around
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | D |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({4, 3}, :dark_king)
+
+      moves = Rules.legal_moves(board, :dark, {4, 3})
+
+      assert Enum.sort(moves) == [{3, 2}, {3, 4}, {5, 2}, {5, 4}]
+    end
+
+    test "returns empty list when a piece is blocked" do
+      # Dark at {2,1} blocked by own pieces at {3,0} and {3,2}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | d |   | d |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 0}, :dark)
+        |> Board.put_piece({3, 2}, :dark)
+
+      assert Rules.legal_moves(board, :dark, {2, 1}) == []
+    end
+
+    test "excludes simple moves when any piece of that color can jump" do
+      # Dark at {2,1} can simple-move to {3,0}. Dark at {2,5} can jump
+      # over light at {3,6} to {4,7}. Since any dark piece can jump,
+      # {2,1}'s simple moves are excluded (mandatory capture).
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | d |   | . |
+      # 3 | . |   | . |   | . |   | l |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({2, 5}, :dark)
+        |> Board.put_piece({3, 6}, :light)
+
+      # {2,1} has no jumps itself, but another dark piece does,
+      # so {2,1}'s simple moves are excluded
+      assert Rules.legal_moves(board, :dark, {2, 1}) == []
+    end
+
+    test "respects board edges" do
+      # Dark at {2,7} — can only move to {3,6} (right side is off the board)
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | d |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({2, 7}, :dark)
+
+      assert Rules.legal_moves(board, :dark, {2, 7}) == [{3, 6}]
+    end
+  end
+
+  describe "movable_pieces/2" do
+    test "returns all pieces that can move for the given color" do
+      # Dark at {2,1} and {2,3} — both can move forward
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | d |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({2, 3}, :dark)
+
+      pieces = Rules.movable_pieces(board, :dark)
+
+      assert Enum.sort(pieces) == [{2, 1}, {2, 3}]
+    end
+
+    test "only returns pieces that can jump when jumps are available" do
+      # Dark at {2,1} can simple-move only. Dark at {2,5} can jump
+      # light at {3,6}. Mandatory capture means only {2,5} is movable.
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | d |   | . |
+      # 3 | . |   | . |   | . |   | l |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({2, 5}, :dark)
+        |> Board.put_piece({3, 6}, :light)
+
+      assert Rules.movable_pieces(board, :dark) == [{2, 5}]
+    end
+
+    test "returns empty list when no pieces can move" do
+      # Dark at {7,0} — no forward moves (row 7 is the edge)
+      # and no jumps available
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | d |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({7, 0}, :dark)
+
+      assert Rules.movable_pieces(board, :dark) == []
+    end
+
+    test "does not include opponent pieces" do
+      # Dark at {3,2} can move. Light at {5,4} can move.
+      # Asking for dark should only return dark pieces.
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | d |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({3, 2}, :dark)
+        |> Board.put_piece({5, 4}, :light)
+
+      assert Rules.movable_pieces(board, :dark) == [{3, 2}]
+      assert Rules.movable_pieces(board, :light) == [{5, 4}]
+    end
+  end
 end
