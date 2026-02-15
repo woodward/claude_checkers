@@ -154,4 +154,8 @@ defmodule CheckersWeb.GameLive do
   defp status_text(:light_wins), do: "Light wins!"
   defp status_text(:draw), do: "Draw!"
   defp status_text(_), do: ""
+
+  @spec turn_label(Board.color()) :: String.t()
+  defp turn_label(:dark), do: "Dark"
+  defp turn_label(:light), do: "Light"
 end

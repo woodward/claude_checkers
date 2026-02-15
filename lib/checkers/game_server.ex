@@ -82,6 +82,11 @@ defmodule Checkers.GameServer do
   @impl true
   def handle_call({:join, token}, _from, state) do
     {color, new_state} = assign_player(token, state)
+
+    if new_state.players != state.players do
+      broadcast(new_state)
+    end
+
     {:reply, {:ok, color}, new_state}
   end
 

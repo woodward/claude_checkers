@@ -4,12 +4,17 @@
 
     <div class="text-center">
       <%= cond do %>
-        <% @player_color == :spectator -> %>
-          <span class="badge badge-ghost">Watching as spectator</span>
         <% @game.status != :playing -> %>
           <span class="badge badge-success">
             {status_text(@game.status)}
           </span>
+        <% @player_color == :spectator -> %>
+          <div class="flex flex-col gap-1 items-center">
+            <span class="badge badge-ghost">Watching as spectator</span>
+            <span class="text-sm opacity-70">
+              {turn_label(@game.turn)}'s turn
+            </span>
+          </div>
         <% @players.dark == nil or @players.light == nil -> %>
           <span class="badge badge-warning">Waiting for opponent...</span>
         <% @game.turn == @player_color -> %>
@@ -24,18 +29,30 @@
       class="grid grid-cols-8 border-4 border-base-300 rounded-lg overflow-hidden shadow-xl"
       style="width: 400px; height: 400px;"
     >
-      <div
-        :for={{pos, piece} <- @squares}
-        id={"square-#{elem(pos, 0)}-#{elem(pos, 1)}"}
-        class={square_classes(pos, piece, @selected, @legal_moves, @player_color, @game.turn)}
-        phx-click="square_clicked"
-        phx-value-row={elem(pos, 0)}
-        phx-value-col={elem(pos, 1)}
-      >
-        <div :if={piece} class={piece_classes(piece, pos, @selected)}>
-          <span :if={king?(piece)} class="text-xs font-bold">♛</span>
+      <%= if @player_color in [:dark, :light] do %>
+        <div
+          :for={{pos, piece} <- @squares}
+          id={"square-#{elem(pos, 0)}-#{elem(pos, 1)}"}
+          class={square_classes(pos, piece, @selected, @legal_moves, @player_color, @game.turn)}
+          phx-click="square_clicked"
+          phx-value-row={elem(pos, 0)}
+          phx-value-col={elem(pos, 1)}
+        >
+          <div :if={piece} class={piece_classes(piece, pos, @selected)}>
+            <span :if={king?(piece)} class="text-xs font-bold">♛</span>
+          </div>
         </div>
-      </div>
+      <% else %>
+        <div
+          :for={{pos, piece} <- @squares}
+          id={"square-#{elem(pos, 0)}-#{elem(pos, 1)}"}
+          class={square_classes(pos, piece, nil, [], :spectator, @game.turn)}
+        >
+          <div :if={piece} class={piece_classes(piece, pos, nil)}>
+            <span :if={king?(piece)} class="text-xs font-bold">♛</span>
+          </div>
+        </div>
+      <% end %>
     </div>
 
     <div class="flex gap-2">
@@ -52,5 +69,9 @@
         Light
       </span>
     </div>
+
+    <p :if={@player_color == :spectator} class="text-sm opacity-50">
+      This game is full. You are watching as a spectator.
+    </p>
   </div>
 </Layouts.app>
