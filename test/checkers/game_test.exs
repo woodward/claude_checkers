@@ -88,14 +88,14 @@ defmodule Checkers.GameTest do
       # It's dark's turn; trying to move light piece at {5,0}
       game = Game.new()
 
-      assert {:error, _reason} = Game.move(game, {5, 0}, {4, 1})
+      assert {:error, :not_your_piece} = Game.move(game, {5, 0}, {4, 1})
     end
 
     test "rejects moving to a non-diagonal square" do
       # {2,1} -> {3,1} is straight down, not diagonal
       game = Game.new()
 
-      assert {:error, _reason} = Game.move(game, {2, 1}, {3, 1})
+      assert {:error, :invalid_move} = Game.move(game, {2, 1}, {3, 1})
     end
 
     test "rejects moving to an occupied square" do
@@ -103,7 +103,7 @@ defmodule Checkers.GameTest do
       game = Game.new()
       assert Board.piece_at(game.board, {1, 2}) != nil
 
-      assert {:error, _reason} = Game.move(game, {2, 1}, {1, 2})
+      assert {:error, :destination_occupied} = Game.move(game, {2, 1}, {1, 2})
     end
 
     test "a jump removes the captured piece" do
