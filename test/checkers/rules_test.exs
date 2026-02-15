@@ -57,4 +57,120 @@ defmodule Checkers.RulesTest do
       assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {3, 2}, {3, 3})
     end
   end
+
+  describe "validate_move/4 - jumps" do
+    test "allows a dark checker to jump over a light checker" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      assert Board.piece_at(board, {4, 3}) == nil
+
+      assert :ok = Rules.validate_move(board, :dark, {2, 1}, {4, 3})
+    end
+
+    test "allows a light checker to jump over a dark checker" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | d |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({5, 4}, :light)
+        |> Board.put_piece({4, 3}, :dark)
+
+      assert Board.piece_at(board, {3, 2}) == nil
+
+      assert :ok = Rules.validate_move(board, :light, {5, 4}, {3, 2})
+    end
+
+    test "rejects jumping over an empty square" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+
+      assert Board.piece_at(board, {3, 2}) == nil
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {2, 1}, {4, 3})
+    end
+
+    test "rejects jumping over your own piece" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | d |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :dark)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {2, 1}, {4, 3})
+    end
+
+    test "rejects jumping to an occupied landing square" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | l |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+        |> Board.put_piece({4, 3}, :light)
+
+      assert {:error, :destination_occupied} = Rules.validate_move(board, :dark, {2, 1}, {4, 3})
+    end
+
+    test "rejects a checker jumping backward" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | d |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({4, 3}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {4, 3}, {2, 1})
+    end
+  end
 end

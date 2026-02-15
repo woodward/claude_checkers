@@ -8,11 +8,20 @@ defmodule Checkers.Game do
 
   alias Checkers.{Board, Rules}
 
+  @type status :: :playing | :dark_wins | :light_wins | :draw
+  @type t :: %__MODULE__{
+          board: Board.t() | nil,
+          turn: Rules.color(),
+          status: status(),
+          moves: [{Board.position(), Board.position()}]
+        }
+
   defstruct board: nil, turn: :dark, status: :playing, moves: []
 
   @doc """
   Creates a new game with a fresh board. Dark moves first.
   """
+  @spec new() :: t()
   def new do
     %__MODULE__{board: Board.new()}
   end
@@ -21,6 +30,7 @@ defmodule Checkers.Game do
   Attempts to move a piece from `from` to `to`.
   Returns `{:ok, updated_game}` or `{:error, reason}`.
   """
+  @spec move(t(), Board.position(), Board.position()) :: {:ok, t()} | {:error, Rules.error()}
   def move(%__MODULE__{board: board, turn: turn} = game, from, to) do
     case Rules.validate_move(board, turn, from, to) do
       :ok ->

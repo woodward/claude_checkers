@@ -7,12 +7,17 @@ defmodule Checkers.Board do
   `:dark_king`, `:light_king`).
   """
 
+  @type position :: {non_neg_integer(), non_neg_integer()}
+  @type piece :: :dark | :light | :dark_king | :light_king
+  @type t :: %__MODULE__{pieces: %{optional(position()) => piece()}}
+
   defstruct pieces: %{}
 
   @doc """
   Creates a new board with the standard starting position:
   12 dark pieces on rows 0-2, 12 light pieces on rows 5-7.
   """
+  @spec new() :: t()
   def new do
     pieces =
       for row <- 0..7, col <- 0..7, rem(row + col, 2) == 1, row not in 3..4, into: %{} do
@@ -26,6 +31,7 @@ defmodule Checkers.Board do
   @doc """
   Returns the piece at the given `{row, col}` position, or `nil` if empty.
   """
+  @spec piece_at(t(), position()) :: piece() | nil
   def piece_at(%__MODULE__{pieces: pieces}, pos) do
     Map.get(pieces, pos)
   end
@@ -33,6 +39,7 @@ defmodule Checkers.Board do
   @doc """
   Places a piece at the given position, overwriting any existing piece.
   """
+  @spec put_piece(t(), position(), piece()) :: t()
   def put_piece(%__MODULE__{pieces: pieces} = board, pos, piece) do
     %{board | pieces: Map.put(pieces, pos, piece)}
   end
@@ -40,6 +47,7 @@ defmodule Checkers.Board do
   @doc """
   Removes the piece at the given position. No-op if already empty.
   """
+  @spec remove_piece(t(), position()) :: t()
   def remove_piece(%__MODULE__{pieces: pieces} = board, pos) do
     %{board | pieces: Map.delete(pieces, pos)}
   end
@@ -47,6 +55,7 @@ defmodule Checkers.Board do
   @doc """
   Moves a piece from one position to another, preserving its type.
   """
+  @spec move_piece(t(), position(), position()) :: t()
   def move_piece(%__MODULE__{} = board, from, to) do
     piece = piece_at(board, from)
 
