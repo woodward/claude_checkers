@@ -78,10 +78,8 @@ defmodule Checkers.Rules do
   Returns true if the piece at `pos` has any available jumps.
   """
   @spec any_jumps?(Board.t(), Board.piece(), Board.position()) :: boolean()
-  def any_jumps?(%Board{} = board, piece, {row, col} = _pos) do
-    jump_targets = [{row + 2, col + 2}, {row + 2, col - 2}, {row - 2, col + 2}, {row - 2, col - 2}]
-
-    Enum.any?(jump_targets, fn to -> valid_jump?(board, piece, {row, col}, to) end)
+  def any_jumps?(%Board{} = board, piece, pos) do
+    jump_destinations(board, piece, pos) != []
   end
 
   @doc """
@@ -183,12 +181,8 @@ defmodule Checkers.Rules do
   end
 
   @spec any_simple_moves?(Board.t(), Board.piece(), Board.position()) :: boolean()
-  defp any_simple_moves?(board, piece, {row, col}) do
-    move_targets = [{row + 1, col + 1}, {row + 1, col - 1}, {row - 1, col + 1}, {row - 1, col - 1}]
-
-    Enum.any?(move_targets, fn {to_row, to_col} = to ->
-      on_board?(to_row, to_col) and valid_simple_move?(piece, {row, col}, to) and Board.piece_at(board, to) == nil
-    end)
+  defp any_simple_moves?(board, piece, pos) do
+    simple_destinations(board, piece, pos) != []
   end
 
   @spec valid_simple_move?(Board.piece(), Board.position(), Board.position()) :: boolean()
