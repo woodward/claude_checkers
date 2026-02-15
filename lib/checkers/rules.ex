@@ -109,24 +109,23 @@ defmodule Checkers.Rules do
   only jump destinations are returned.
   """
   @spec legal_moves(Board.t(), color(), Board.position()) :: [Board.position()]
-  def legal_moves(%Board{} = board, turn, {row, col} = pos) do
+  def legal_moves(%Board{} = board, turn, pos) do
     piece = Board.piece_at(board, pos)
+    jumps = if piece != nil and color(piece) == turn, do: jump_destinations(board, piece, pos), else: []
 
-    if piece == nil or color(piece) != turn do
-      []
-    else
-      jumps = jump_destinations(board, piece, pos)
+    cond do
+      piece == nil or color(piece) != turn ->
+        []
 
-      if jumps != [] do
+      jumps != [] ->
         jumps
-      else
-        if any_jumps_for_color?(board, turn) do
-          # Mandatory capture: another piece can jump, so no simple moves allowed
-          []
-        else
-          simple_destinations(board, piece, {row, col})
-        end
-      end
+
+      any_jumps_for_color?(board, turn) ->
+        # Mandatory capture: another piece can jump, so no simple moves allowed
+        []
+
+      true ->
+        simple_destinations(board, piece, pos)
     end
   end
 
