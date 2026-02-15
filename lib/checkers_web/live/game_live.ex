@@ -46,6 +46,19 @@ defmodule CheckersWeb.GameLive do
     {:noreply, socket}
   end
 
+  def handle_event("new_game", _params, socket) do
+    GameServer.reset(@server)
+    {:ok, player_color} = GameServer.join(@server, socket.assigns.player_token)
+    state = GameServer.get_state(@server)
+
+    {:noreply,
+     socket
+     |> assign(:player_color, player_color)
+     |> assign(:selected, nil)
+     |> assign(:legal_moves, [])
+     |> assign_game_state(state)}
+  end
+
   # --- Private Helpers ---
 
   @spec handle_click(Board.position(), Phoenix.LiveView.Socket.t()) :: Phoenix.LiveView.Socket.t()
@@ -122,11 +135,11 @@ defmodule CheckersWeb.GameLive do
 
     [
       "flex items-center justify-center aspect-square",
-      if(dark_square?, do: "bg-amber-800", else: "bg-amber-100"),
-      selected? && "ring-4 ring-inset ring-primary",
-      legal_target? && "ring-4 ring-inset ring-success",
-      clickable? && dark_square? && piece != nil && "cursor-pointer",
-      clickable? && legal_target? && "cursor-pointer"
+      if(dark_square?, do: "bg-green-700", else: "bg-stone-100"),
+      selected? && "ring-4 ring-inset ring-sky-400",
+      legal_target? && "ring-4 ring-inset ring-sky-400/60",
+      clickable? && dark_square? && piece != nil && "cursor-pointer hover:brightness-110",
+      clickable? && legal_target? && "cursor-pointer hover:brightness-110"
     ]
   end
 
@@ -136,13 +149,13 @@ defmodule CheckersWeb.GameLive do
     selected? = pos == selected
 
     [
-      "rounded-full w-3/4 h-3/4 flex items-center justify-center",
-      "border-2 shadow-md transition-transform",
+      "rounded-full w-4/5 h-4/5 flex items-center justify-center",
+      "border-4 shadow-lg transition-transform",
       if(color == :dark,
-        do: "bg-stone-800 border-stone-900 text-amber-200",
-        else: "bg-amber-50 border-amber-200 text-stone-800"
+        do: "bg-gray-900 border-gray-950 text-gray-300 shadow-gray-900/50",
+        else: "bg-red-700 border-red-900 text-red-100 shadow-red-800/50"
       ),
-      selected? && "scale-110 ring-2 ring-primary"
+      selected? && "scale-110 ring-3 ring-sky-400"
     ]
   end
 

@@ -37,7 +37,7 @@ defmodule CheckersWeb.Layouts do
     ~H"""
     <header class="navbar px-4 sm:px-6 lg:px-8">
       <div class="flex-1">
-        <a href="/" class="text-lg font-bold tracking-tight">Checkers</a>
+        <a href="/" class="text-2xl font-bold tracking-tight">Checkers</a>
       </div>
       <div class="flex-none">
         <.theme_toggle />

@@ -1,33 +1,41 @@
 <Layouts.app flash={@flash}>
   <div class="flex flex-col items-center gap-6">
-    <h1 class="text-2xl font-bold">Checkers</h1>
-
     <div class="text-center">
       <%= cond do %>
         <% @game.status != :playing -> %>
-          <span class="badge badge-success">
-            {status_text(@game.status)}
-          </span>
+          <div class="flex flex-col gap-3 items-center">
+            <span class="badge badge-lg badge-success text-lg font-semibold">
+              {status_text(@game.status)}
+            </span>
+            <button
+              :if={@player_color in [:dark, :light]}
+              id="new-game-btn"
+              class="btn btn-sm btn-outline"
+              phx-click="new_game"
+            >
+              New Game
+            </button>
+          </div>
         <% @player_color == :spectator -> %>
           <div class="flex flex-col gap-1 items-center">
-            <span class="badge badge-ghost">Watching as spectator</span>
-            <span class="text-sm opacity-70">
+            <span class="badge badge-lg badge-ghost text-lg">Watching as spectator</span>
+            <span class="text-base opacity-70">
               {turn_label(@game.turn)}'s turn
             </span>
           </div>
         <% @players.dark == nil or @players.light == nil -> %>
-          <span class="badge badge-warning">Waiting for opponent...</span>
+          <span class="badge badge-lg badge-warning text-lg font-semibold">Waiting for opponent...</span>
         <% @game.turn == @player_color -> %>
-          <span class="badge badge-primary">Your turn!</span>
+          <span class="badge badge-lg badge-neutral text-lg font-semibold">Your turn!</span>
         <% true -> %>
-          <span class="badge badge-ghost">Opponent's turn</span>
+          <span class="badge badge-lg badge-ghost text-lg">Opponent's turn</span>
       <% end %>
     </div>
 
     <div
       id="board"
-      class="grid grid-cols-8 border-4 border-base-300 rounded-lg overflow-hidden shadow-xl"
-      style="width: 400px; height: 400px;"
+      class="grid grid-cols-8 border-4 border-green-950 rounded-lg overflow-hidden shadow-2xl"
+      style="width: 520px; height: 520px;"
     >
       <%= if @player_color in [:dark, :light] do %>
         <div
@@ -39,7 +47,7 @@
           phx-value-col={elem(pos, 1)}
         >
           <div :if={piece} class={piece_classes(piece, pos, @selected)}>
-            <span :if={king?(piece)} class="text-xs font-bold">♛</span>
+            <span :if={king?(piece)} class="text-sm font-bold">♛</span>
           </div>
         </div>
       <% else %>
@@ -49,22 +57,22 @@
           class={square_classes(pos, piece, nil, [], :spectator, @game.turn)}
         >
           <div :if={piece} class={piece_classes(piece, pos, nil)}>
-            <span :if={king?(piece)} class="text-xs font-bold">♛</span>
+            <span :if={king?(piece)} class="text-sm font-bold">♛</span>
           </div>
         </div>
       <% end %>
     </div>
 
-    <div class="flex gap-2">
+    <div class="flex gap-3">
       <span class={[
-        "badge",
-        if(@game.turn == :dark, do: "badge-primary", else: "badge-ghost")
+        "badge badge-lg text-lg",
+        if(@game.turn == :dark, do: "badge-neutral", else: "badge-ghost")
       ]}>
         Dark
       </span>
       <span class={[
-        "badge",
-        if(@game.turn == :light, do: "badge-primary", else: "badge-ghost")
+        "badge badge-lg text-lg",
+        if(@game.turn == :light, do: "badge-neutral", else: "badge-ghost")
       ]}>
         Light
       </span>
