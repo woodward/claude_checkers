@@ -2,6 +2,10 @@ This is a web application written using the Phoenix web framework.
 
 ## Project guidelines
 
+- After every git commit, **always** display the result using this exact format (on a single line):
+  `Committed: \`<short-sha>\` at <YYYY-MM-DD HH:MM:SS> — <commit subject>`
+  The timestamp comes from `git log -1 --format='%ci'` immediately after the commit. Example:
+  `Committed: \`abc1234\` at 2026-02-14 13:15:32 — Set formatter line length to 120`
 - Use `mix precommit` alias when you are done with all changes and fix any pending issues
 - Use the already included and available `:req` (`Req`) library for HTTP requests, **avoid** `:httpoison`, `:tesla`, and `:httpc`. Req is included by default and is the preferred HTTP client for Phoenix apps
 
