@@ -61,6 +61,7 @@ defmodule Checkers.Game do
     end
   end
 
+  @spec apply_move(t(), Board.position(), Board.position(), boolean()) :: {:ok, t()}
   defp apply_move(%__MODULE__{board: board, turn: turn} = game, from, to, is_jump) do
     new_board =
       board
@@ -102,6 +103,7 @@ defmodule Checkers.Game do
     end
   end
 
+  @spec next_turn(Rules.color()) :: Rules.color()
   defp next_turn(:dark), do: :light
   defp next_turn(:light), do: :dark
 end
