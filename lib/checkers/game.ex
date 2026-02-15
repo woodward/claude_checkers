@@ -38,6 +38,7 @@ defmodule Checkers.Game do
           board
           |> Board.move_piece(from, to)
           |> maybe_remove_captured(from, to)
+          |> maybe_promote(to)
 
         {:ok, %{game | board: new_board, turn: next_turn(turn), moves: [{from, to} | game.moves]}}
 
@@ -53,6 +54,17 @@ defmodule Checkers.Game do
       Board.remove_piece(board, mid)
     else
       board
+    end
+  end
+
+  @spec maybe_promote(Board.t(), Board.position()) :: Board.t()
+  defp maybe_promote(board, {row, _col} = pos) do
+    piece = Board.piece_at(board, pos)
+
+    case {piece, row} do
+      {:dark, 7} -> Board.put_piece(board, pos, :dark_king)
+      {:light, 0} -> Board.put_piece(board, pos, :light_king)
+      _ -> board
     end
   end
 

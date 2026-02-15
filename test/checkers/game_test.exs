@@ -139,4 +139,75 @@ defmodule Checkers.GameTest do
       assert Board.piece_at(game.board, {3, 2}) == nil
     end
   end
+
+  describe "king promotion" do
+    test "dark checker is promoted to king upon reaching row 7" do
+      # Dark checker at {6,5} moves to {7,6} (back row)
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | d |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({6, 5}, :dark)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {6, 5}, {7, 6})
+
+      assert Board.piece_at(game.board, {7, 6}) == :dark_king
+    end
+
+    test "light checker is promoted to king upon reaching row 0" do
+      # Light checker at {1,2} moves to {0,1} (back row)
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | l |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({1, 2}, :light)
+
+      game = %Game{board: board, turn: :light, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {1, 2}, {0, 1})
+
+      assert Board.piece_at(game.board, {0, 1}) == :light_king
+    end
+
+    test "a king is not re-promoted when it reaches the back row" do
+      # Dark king at {6,3} moves to {7,4} — should stay :dark_king
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | D |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({6, 3}, :dark_king)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {6, 3}, {7, 4})
+
+      assert Board.piece_at(game.board, {7, 4}) == :dark_king
+    end
+  end
 end
