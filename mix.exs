@@ -42,6 +42,7 @@ defmodule Checkers.MixProject do
     [
       {:bandit, "~> 1.10"},
       {:daisy_ui_components, "~> 0.9"},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:dns_cluster, "~> 0.2"},
       {:esbuild, "~> 0.10", runtime: Mix.env() == :dev},
       {:gettext, "~> 1.0"},
