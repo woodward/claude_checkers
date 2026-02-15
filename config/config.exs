@@ -47,6 +47,9 @@ config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
+# Configure DaisyUI Components
+config :daisy_ui_components, translate_function: &CheckersWeb.Gettext.translate_error/1
+
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
