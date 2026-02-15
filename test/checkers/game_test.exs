@@ -210,4 +210,155 @@ defmodule Checkers.GameTest do
       assert Board.piece_at(game.board, {7, 4}) == :dark_king
     end
   end
+
+  describe "multi-jump" do
+    test "turn does not switch when another jump is available" do
+      # Dark at {2,1} will double-jump over light at {3,2} and {5,4}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+        |> Board.put_piece({5, 4}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # First jump: {2,1} -> {4,3}, captures light at {3,2}
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+
+      # Turn stays with dark because another jump is available from {4,3}
+      assert game.turn == :dark
+      assert game.must_jump_from == {4, 3}
+
+      # First capture removed
+      assert Board.piece_at(game.board, {3, 2}) == nil
+    end
+
+    test "turn switches after completing a multi-jump chain" do
+      # Same setup as above — complete both jumps
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+        |> Board.put_piece({5, 4}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # First jump
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+      # Second jump: {4,3} -> {6,5}, captures light at {5,4}
+      assert {:ok, game} = Game.move(game, {4, 3}, {6, 5})
+
+      # Now turn switches to light — no more jumps available
+      assert game.turn == :light
+      assert game.must_jump_from == nil
+
+      # Both captures removed, piece at final landing
+      assert Board.piece_at(game.board, {6, 5}) == :dark
+      assert Board.piece_at(game.board, {3, 2}) == nil
+      assert Board.piece_at(game.board, {5, 4}) == nil
+      assert Board.piece_at(game.board, {2, 1}) == nil
+    end
+
+    test "during multi-jump, only the jumping piece can move" do
+      # After first jump, trying to move a different piece should fail
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | d |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({2, 3}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+        |> Board.put_piece({5, 4}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # First jump with {2,1}
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+      assert game.must_jump_from == {4, 3}
+
+      # Try to move the other dark piece at {2,3} — should be rejected
+      assert {:error, :must_continue_jump} = Game.move(game, {2, 3}, {3, 4})
+    end
+
+    test "during multi-jump, the jumping piece must jump (not simple move)" do
+      # After first jump, the piece at {4,3} must jump, not make a simple move
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | l |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+        |> Board.put_piece({5, 4}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # First jump
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+      assert game.must_jump_from == {4, 3}
+
+      # Try a simple move with the jumping piece — should be rejected
+      assert {:error, :must_continue_jump} = Game.move(game, {4, 3}, {5, 2})
+    end
+
+    test "single jump with no further jumps switches turn normally" do
+      # Only one jump available — turn switches after it
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+
+      assert game.turn == :light
+      assert game.must_jump_from == nil
+    end
+  end
 end

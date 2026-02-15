@@ -6,7 +6,7 @@ defmodule Checkers.Rules do
   alias Checkers.Board
 
   @type color :: :dark | :light
-  @type error :: :no_piece_at_source | :not_your_piece | :destination_occupied | :invalid_move
+  @type error :: :no_piece_at_source | :not_your_piece | :destination_occupied | :invalid_move | :must_continue_jump
 
   @doc """
   Validates whether a move from `from` to `to` is legal for the given board and turn.
@@ -35,6 +35,16 @@ defmodule Checkers.Rules do
       true ->
         {:error, :invalid_move}
     end
+  end
+
+  @doc """
+  Returns true if the piece at `pos` has any available jumps.
+  """
+  @spec any_jumps?(Board.t(), Board.piece(), Board.position()) :: boolean()
+  def any_jumps?(%Board{} = board, piece, {row, col} = _pos) do
+    jump_targets = [{row + 2, col + 2}, {row + 2, col - 2}, {row - 2, col + 2}, {row - 2, col - 2}]
+
+    Enum.any?(jump_targets, fn to -> valid_jump?(board, piece, {row, col}, to) end)
   end
 
   @spec valid_simple_move?(Board.piece(), Board.position(), Board.position()) :: boolean()
