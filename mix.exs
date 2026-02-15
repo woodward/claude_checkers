@@ -50,6 +50,7 @@ defmodule Checkers.MixProject do
       {:jason, "~> 1.4"},
       {:lazy_html, "~> 0.1", only: :test},
       {:phoenix, "~> 1.8"},
+      {:phoenix_test, "~> 0.9", only: :test, runtime: false},
       {:phoenix_html, "~> 4.3"},
       {:phoenix_live_dashboard, "~> 0.8"},
       {:phoenix_live_reload, "~> 1.6", only: :dev},
