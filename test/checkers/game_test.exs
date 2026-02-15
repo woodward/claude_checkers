@@ -361,4 +361,100 @@ defmodule Checkers.GameTest do
       assert game.must_jump_from == nil
     end
   end
+
+  describe "mandatory capture" do
+    test "rejects a simple move when a jump is available" do
+      # Dark at {2,1} could jump over light at {3,2}, but tries a simple move instead
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | d |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 0}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # Try a simple move with the other dark piece — should be rejected
+      assert {:error, :jump_available} = Game.move(game, {3, 0}, {4, 1})
+    end
+
+    test "rejects a simple move even when the moving piece has no jump" do
+      # Dark at {4,1} has no jump, but dark at {2,1} does — still must jump
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | d |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({4, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      # {2,1} has a jump available, so no simple moves are allowed for any piece
+      assert {:error, :jump_available} = Game.move(game, {4, 1}, {5, 2})
+    end
+
+    test "allows a jump when a jump is available" do
+      # Dark at {2,1} must jump over light at {3,2} — this should succeed
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+
+      assert Board.piece_at(game.board, {4, 3}) == :dark
+      assert Board.piece_at(game.board, {3, 2}) == nil
+    end
+
+    test "allows a simple move when no jump is available" do
+      # No jumps available for dark — simple move should work
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert {:ok, _game} = Game.move(game, {2, 1}, {3, 2})
+    end
+  end
 end

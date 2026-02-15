@@ -49,8 +49,15 @@ defmodule Checkers.Game do
 
   def move(%__MODULE__{board: board, turn: turn} = game, from, to) do
     case Rules.validate_move(board, turn, from, to) do
-      :ok -> apply_move(game, from, to, jump?(from, to))
-      {:error, _reason} = error -> error
+      :ok ->
+        if not jump?(from, to) and Rules.any_jumps_for_color?(board, turn) do
+          {:error, :jump_available}
+        else
+          apply_move(game, from, to, jump?(from, to))
+        end
+
+      {:error, _reason} = error ->
+        error
     end
   end
 
