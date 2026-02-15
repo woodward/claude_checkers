@@ -1,5 +1,5 @@
 # Initial project commit details
-_Exported on 2/15/2026 at 10:41:52 PST from Cursor (2.4.37)_
+_Exported on 2/15/2026 at 10:44:44 PST from Cursor (2.4.37)_
 
 ---
 
@@ -3395,4 +3395,64 @@ no, I'm going to export another copy of the transcript, and then we'll commit it
 **Cursor**
 
 Sounds good. Let me know when the transcript is ready.
+
+---
+
+**User**
+
+is there a good summary you can put in the README for our project? maybe that would be another final commit
+
+---
+
+**Cursor**
+
+That's the default Phoenix boilerplate. Here's what I'd propose replacing it with:
+
+```markdown
+# Checkers
+
+A real-time multiplayer American Checkers game built with Elixir, Phoenix, and LiveView.
+
+## Features
+
+- **American Checkers rules**: 8x8 board, 12 pieces per side, mandatory captures, multi-jump chains, king promotion
+- **Real-time multiplayer**: Two players connect via browser — first player is dark, second is light
+- **Live updates**: Moves broadcast instantly to both players via Phoenix PubSub
+- **Spectator mode**: Additional visitors can watch the game in progress
+- **Interactive UI**: Click-to-select, legal move highlighting, turn indicators
+
+## Architecture
+
+The game logic is split into focused modules:
+
+- `Checkers.Board` — board state, piece placement, and queries
+- `Checkers.Rules` — move validation, legal move computation, mandatory capture enforcement
+- `Checkers.Game` — game state machine (turns, status, move history, promotion, win detection)
+- `Checkers.GameServer` — GenServer wrapping a game with player assignment and PubSub broadcasts
+- `CheckersWeb.GameLive` — LiveView UI for the board, interaction, and real-time sync
+
+## Getting Started
+
+```bash
+mix setup
+mix phx.server
+```
+
+Visit [localhost:4000/game](http://localhost:4000/game) to play. Open a second browser window (or incognito) to join as the opponent.
+
+## Tests
+
+```bash
+mix test          # 102 tests
+mix dialyzer      # typespec validation
+```
+```
+
+Does that look good, or would you like me to adjust anything before I make the change?
+
+---
+
+**User**
+
+that's good - let's commit that
 
