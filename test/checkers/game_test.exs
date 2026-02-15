@@ -36,8 +36,26 @@ defmodule Checkers.GameTest do
     end
   end
 
+  # Standard starting position used by Game.new/0:
+  #
+  #     0   1   2   3   4   5   6   7
+  # 0 |   | d |   | d |   | d |   | d |
+  # 1 | d |   | d |   | d |   | d |   |
+  # 2 |   | d |   | d |   | d |   | d |
+  # 3 | . |   | . |   | . |   | . |   |
+  # 4 |   | . |   | . |   | . |   | . |
+  # 5 | l |   | l |   | l |   | l |   |
+  # 6 |   | l |   | l |   | l |   | l |
+  # 7 | l |   | l |   | l |   | l |   |
+
   describe "move/3" do
     test "dark can make a simple diagonal move forward" do
+      # Move dark {2,1} -> {3,2}
+      #
+      # Before:                          After:
+      #     0   1   2   3                    0   1   2   3
+      # 2 |   | d |   | d |             2 |   | . |   | d |
+      # 3 | . |   | . |   |             3 | . |   | d |   |
       game = Game.new()
       assert Board.piece_at(game.board, {2, 1}) == :dark
       assert Board.piece_at(game.board, {3, 2}) == nil
@@ -49,6 +67,7 @@ defmodule Checkers.GameTest do
     end
 
     test "turn switches to light after dark moves" do
+      # Move dark {2,1} -> {3,2}; turn should flip to :light
       game = Game.new()
       assert game.turn == :dark
 
@@ -66,18 +85,21 @@ defmodule Checkers.GameTest do
     end
 
     test "rejects moving the wrong color's piece" do
+      # It's dark's turn; trying to move light piece at {5,0}
       game = Game.new()
 
       assert {:error, _reason} = Game.move(game, {5, 0}, {4, 1})
     end
 
     test "rejects moving to a non-diagonal square" do
+      # {2,1} -> {3,1} is straight down, not diagonal
       game = Game.new()
 
       assert {:error, _reason} = Game.move(game, {2, 1}, {3, 1})
     end
 
     test "rejects moving to an occupied square" do
+      # {2,1} -> {1,2} is backward and {1,2} has a dark piece
       game = Game.new()
       assert Board.piece_at(game.board, {1, 2}) != nil
 

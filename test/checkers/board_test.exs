@@ -3,6 +3,18 @@ defmodule Checkers.BoardTest do
 
   alias Checkers.Board
 
+  # Standard starting position used by Board.new/0:
+  #
+  #     0   1   2   3   4   5   6   7
+  # 0 |   | d |   | d |   | d |   | d |
+  # 1 | d |   | d |   | d |   | d |   |
+  # 2 |   | d |   | d |   | d |   | d |
+  # 3 | . |   | . |   | . |   | . |   |
+  # 4 |   | . |   | . |   | . |   | . |
+  # 5 | l |   | l |   | l |   | l |   |
+  # 6 |   | l |   | l |   | l |   | l |
+  # 7 | l |   | l |   | l |   | l |   |
+
   describe "new/0" do
     test "returns a Board struct" do
       board = Board.new()
@@ -42,9 +54,12 @@ defmodule Checkers.BoardTest do
   end
 
   describe "piece_at/2" do
+    # Uses standard starting position (see diagram above)
+
     test "returns the piece at an occupied position" do
       board = Board.new()
 
+      # {0,1} is a dark piece, {7,0} is a light piece
       assert Board.piece_at(board, {0, 1}) == :dark
       assert Board.piece_at(board, {7, 0}) == :light
     end
@@ -52,6 +67,7 @@ defmodule Checkers.BoardTest do
     test "returns nil for an empty position" do
       board = Board.new()
 
+      # {3,0} is an empty dark square in the middle
       assert Board.piece_at(board, {3, 0}) == nil
     end
 
@@ -64,6 +80,10 @@ defmodule Checkers.BoardTest do
 
   describe "put_piece/3" do
     test "places a piece on an empty square" do
+      # Before: empty board
+      # After:
+      #     0   1   2   3   4   5   6   7
+      # 3 | . |   | d |   | . |   | . |   |
       board = %Board{}
 
       board = Board.put_piece(board, {3, 2}, :dark)
@@ -72,6 +92,7 @@ defmodule Checkers.BoardTest do
     end
 
     test "overwrites an existing piece" do
+      # {0,1} starts as :dark, we overwrite with :dark_king
       board = Board.new()
 
       board = Board.put_piece(board, {0, 1}, :dark_king)
@@ -82,6 +103,7 @@ defmodule Checkers.BoardTest do
 
   describe "remove_piece/2" do
     test "removes a piece from the board" do
+      # {0,1} starts as :dark in the standard position
       board = Board.new()
 
       board = Board.remove_piece(board, {0, 1})
@@ -100,6 +122,12 @@ defmodule Checkers.BoardTest do
 
   describe "move_piece/3" do
     test "moves a piece from one position to another" do
+      # Using standard position; move dark from {2,1} to {3,2}
+      #
+      # Before:                          After:
+      #     0   1   2   3                    0   1   2   3
+      # 2 |   | d |   | d |             2 |   | . |   | d |
+      # 3 | . |   | . |   |             3 | . |   | d |   |
       board = Board.new()
       assert Board.piece_at(board, {2, 1}) == :dark
       assert Board.piece_at(board, {3, 2}) == nil
@@ -111,6 +139,12 @@ defmodule Checkers.BoardTest do
     end
 
     test "preserves the piece type" do
+      # Custom board with a dark king at {4,3}; move to {3,2}
+      #
+      # Before:                          After:
+      #     0   1   2   3                    0   1   2   3
+      # 3 | . |   | . |   |             3 | . |   | D |   |
+      # 4 |   | . |   | D |             4 |   | . |   | . |
       board = %Board{} |> Board.put_piece({4, 3}, :dark_king)
       assert Board.piece_at(board, {4, 3}) == :dark_king
       assert Board.piece_at(board, {3, 2}) == nil
