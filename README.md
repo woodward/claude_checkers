@@ -1,6 +1,6 @@
 # Checkers
 
-A real-time multiplayer American Checkers game built with Elixir, Phoenix, and LiveView.
+A real-time multiplayer American Checkers game built with Elixir, Phoenix, and LiveView. Developed via pair programming with Claude Opus 4.6 (Anthropic) in Cursor.
 
 ## Features
 
