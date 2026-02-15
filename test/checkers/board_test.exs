@@ -61,4 +61,40 @@ defmodule Checkers.BoardTest do
       assert Board.piece_at(board, {8, 0}) == nil
     end
   end
+
+  describe "put_piece/3" do
+    test "places a piece on an empty square" do
+      board = %Board{}
+
+      board = Board.put_piece(board, {3, 2}, :dark)
+
+      assert Board.piece_at(board, {3, 2}) == :dark
+    end
+
+    test "overwrites an existing piece" do
+      board = Board.new()
+
+      board = Board.put_piece(board, {0, 1}, :dark_king)
+
+      assert Board.piece_at(board, {0, 1}) == :dark_king
+    end
+  end
+
+  describe "remove_piece/2" do
+    test "removes a piece from the board" do
+      board = Board.new()
+
+      board = Board.remove_piece(board, {0, 1})
+
+      assert Board.piece_at(board, {0, 1}) == nil
+    end
+
+    test "is a no-op for an empty square" do
+      board = %Board{}
+
+      board = Board.remove_piece(board, {3, 2})
+
+      assert Board.piece_at(board, {3, 2}) == nil
+    end
+  end
 end

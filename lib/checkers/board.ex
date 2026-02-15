@@ -29,4 +29,18 @@ defmodule Checkers.Board do
   def piece_at(%__MODULE__{pieces: pieces}, pos) do
     Map.get(pieces, pos)
   end
+
+  @doc """
+  Places a piece at the given position, overwriting any existing piece.
+  """
+  def put_piece(%__MODULE__{pieces: pieces} = board, pos, piece) do
+    %{board | pieces: Map.put(pieces, pos, piece)}
+  end
+
+  @doc """
+  Removes the piece at the given position. No-op if already empty.
+  """
+  def remove_piece(%__MODULE__{pieces: pieces} = board, pos) do
+    %{board | pieces: Map.delete(pieces, pos)}
+  end
 end
