@@ -34,11 +34,25 @@ defmodule Checkers.Game do
   def move(%__MODULE__{board: board, turn: turn} = game, from, to) do
     case Rules.validate_move(board, turn, from, to) do
       :ok ->
-        {:ok,
-         %{game | board: Board.move_piece(board, from, to), turn: next_turn(turn), moves: [{from, to} | game.moves]}}
+        new_board =
+          board
+          |> Board.move_piece(from, to)
+          |> maybe_remove_captured(from, to)
+
+        {:ok, %{game | board: new_board, turn: next_turn(turn), moves: [{from, to} | game.moves]}}
 
       {:error, _reason} = error ->
         error
+    end
+  end
+
+  @spec maybe_remove_captured(Board.t(), Board.position(), Board.position()) :: Board.t()
+  defp maybe_remove_captured(board, {from_row, from_col}, {to_row, to_col}) do
+    if abs(to_row - from_row) == 2 do
+      mid = {div(from_row + to_row, 2), div(from_col + to_col, 2)}
+      Board.remove_piece(board, mid)
+    else
+      board
     end
   end
 

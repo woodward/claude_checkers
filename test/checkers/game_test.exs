@@ -83,5 +83,38 @@ defmodule Checkers.GameTest do
 
       assert {:error, _reason} = Game.move(game, {2, 1}, {1, 2})
     end
+
+    test "a jump removes the captured piece" do
+      # Custom board: dark at {2,1}, light at {3,2}, landing {4,3} empty
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | d |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({2, 1}, :dark)
+        |> Board.put_piece({3, 2}, :light)
+
+      game = %Game{board: board, turn: :dark, status: :playing, moves: []}
+
+      assert Board.piece_at(game.board, {2, 1}) == :dark
+      assert Board.piece_at(game.board, {3, 2}) == :light
+      assert Board.piece_at(game.board, {4, 3}) == nil
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {4, 3})
+
+      # Piece moved to landing square
+      assert Board.piece_at(game.board, {4, 3}) == :dark
+      # Source is now empty
+      assert Board.piece_at(game.board, {2, 1}) == nil
+      # Captured piece is removed
+      assert Board.piece_at(game.board, {3, 2}) == nil
+    end
   end
 end
