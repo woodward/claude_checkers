@@ -1,18 +1,37 @@
 # Checkers
 
-To start your Phoenix server:
+A real-time multiplayer American Checkers game built with Elixir, Phoenix, and LiveView.
 
-* Run `mix setup` to install and setup dependencies
-* Start Phoenix endpoint with `mix phx.server` or inside IEx with `iex -S mix phx.server`
+## Features
 
-Now you can visit [`localhost:4000`](http://localhost:4000) from your browser.
+- **American Checkers rules**: 8x8 board, 12 pieces per side, mandatory captures, multi-jump chains, king promotion
+- **Real-time multiplayer**: Two players connect via browser — first player is dark, second is light
+- **Live updates**: Moves broadcast instantly to both players via Phoenix PubSub
+- **Spectator mode**: Additional visitors can watch the game in progress
+- **Interactive UI**: Click-to-select, legal move highlighting, turn indicators
 
-Ready to run in production? Please [check our deployment guides](https://hexdocs.pm/phoenix/deployment.html).
+## Architecture
 
-## Learn more
+The game logic is split into focused modules:
 
-* Official website: https://www.phoenixframework.org/
-* Guides: https://hexdocs.pm/phoenix/overview.html
-* Docs: https://hexdocs.pm/phoenix
-* Forum: https://elixirforum.com/c/phoenix-forum
-* Source: https://github.com/phoenixframework/phoenix
+- `Checkers.Board` — board state, piece placement, and queries
+- `Checkers.Rules` — move validation, legal move computation, mandatory capture enforcement
+- `Checkers.Game` — game state machine (turns, status, move history, promotion, win detection)
+- `Checkers.GameServer` — GenServer wrapping a game with player assignment and PubSub broadcasts
+- `CheckersWeb.GameLive` — LiveView UI for the board, interaction, and real-time sync
+
+## Getting Started
+
+```bash
+mix setup
+mix phx.server
+```
+
+Visit [localhost:4000/game](http://localhost:4000/game) to play. Open a second browser window (or incognito) to join as the opponent.
+
+## Tests
+
+```bash
+mix test          # 102 tests
+mix dialyzer      # typespec validation
+```
