@@ -15,9 +15,19 @@ defmodule CheckersWeb.Router do
   end
 
   scope "/", CheckersWeb do
-    pipe_through :browser
+    pipe_through [:browser, :ensure_player_token]
 
     get "/", PageController, :home
+    live "/game", GameLive
+  end
+
+  defp ensure_player_token(conn, _opts) do
+    if get_session(conn, :player_token) do
+      conn
+    else
+      token = Base.encode64(:crypto.strong_rand_bytes(16))
+      put_session(conn, :player_token, token)
+    end
   end
 
   # Other scopes may use custom stacks.

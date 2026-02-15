@@ -11,8 +11,7 @@ defmodule Checkers.Application do
       CheckersWeb.Telemetry,
       {DNSCluster, query: Application.get_env(:checkers, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Checkers.PubSub},
-      # Start a worker by calling: Checkers.Worker.start_link(arg)
-      # {Checkers.Worker, arg},
+      {Checkers.GameServer, name: Checkers.GameServer},
       # Start to serve requests, typically the last entry
       CheckersWeb.Endpoint
     ]
