@@ -35,4 +35,53 @@ defmodule Checkers.GameTest do
       assert game.moves == []
     end
   end
+
+  describe "move/3" do
+    test "dark can make a simple diagonal move forward" do
+      game = Game.new()
+      assert Board.piece_at(game.board, {2, 1}) == :dark
+      assert Board.piece_at(game.board, {3, 2}) == nil
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {3, 2})
+
+      assert Board.piece_at(game.board, {2, 1}) == nil
+      assert Board.piece_at(game.board, {3, 2}) == :dark
+    end
+
+    test "turn switches to light after dark moves" do
+      game = Game.new()
+      assert game.turn == :dark
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {3, 2})
+
+      assert game.turn == :light
+    end
+
+    test "move is recorded in history" do
+      game = Game.new()
+
+      assert {:ok, game} = Game.move(game, {2, 1}, {3, 2})
+
+      assert game.moves == [{{2, 1}, {3, 2}}]
+    end
+
+    test "rejects moving the wrong color's piece" do
+      game = Game.new()
+
+      assert {:error, _reason} = Game.move(game, {5, 0}, {4, 1})
+    end
+
+    test "rejects moving to a non-diagonal square" do
+      game = Game.new()
+
+      assert {:error, _reason} = Game.move(game, {2, 1}, {3, 1})
+    end
+
+    test "rejects moving to an occupied square" do
+      game = Game.new()
+      assert Board.piece_at(game.board, {1, 2}) != nil
+
+      assert {:error, _reason} = Game.move(game, {2, 1}, {1, 2})
+    end
+  end
 end
