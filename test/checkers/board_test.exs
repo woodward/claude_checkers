@@ -40,4 +40,25 @@ defmodule Checkers.BoardTest do
       end)
     end
   end
+
+  describe "piece_at/2" do
+    test "returns the piece at an occupied position" do
+      board = Board.new()
+
+      assert Board.piece_at(board, {0, 1}) == :dark
+      assert Board.piece_at(board, {7, 0}) == :light
+    end
+
+    test "returns nil for an empty position" do
+      board = Board.new()
+
+      assert Board.piece_at(board, {3, 0}) == nil
+    end
+
+    test "returns nil for a position off the board" do
+      board = Board.new()
+
+      assert Board.piece_at(board, {8, 0}) == nil
+    end
+  end
 end

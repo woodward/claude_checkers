@@ -22,4 +22,11 @@ defmodule Checkers.Board do
 
     %__MODULE__{pieces: pieces}
   end
+
+  @doc """
+  Returns the piece at the given `{row, col}` position, or `nil` if empty.
+  """
+  def piece_at(%__MODULE__{pieces: pieces}, pos) do
+    Map.get(pieces, pos)
+  end
 end
