@@ -43,4 +43,15 @@ defmodule Checkers.Board do
   def remove_piece(%__MODULE__{pieces: pieces} = board, pos) do
     %{board | pieces: Map.delete(pieces, pos)}
   end
+
+  @doc """
+  Moves a piece from one position to another, preserving its type.
+  """
+  def move_piece(%__MODULE__{} = board, from, to) do
+    piece = piece_at(board, from)
+
+    board
+    |> remove_piece(from)
+    |> put_piece(to, piece)
+  end
 end

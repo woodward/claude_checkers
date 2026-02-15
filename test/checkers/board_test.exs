@@ -97,4 +97,28 @@ defmodule Checkers.BoardTest do
       assert Board.piece_at(board, {3, 2}) == nil
     end
   end
+
+  describe "move_piece/3" do
+    test "moves a piece from one position to another" do
+      board = Board.new()
+      assert Board.piece_at(board, {2, 1}) == :dark
+      assert Board.piece_at(board, {3, 2}) == nil
+
+      board = Board.move_piece(board, {2, 1}, {3, 2})
+
+      assert Board.piece_at(board, {2, 1}) == nil
+      assert Board.piece_at(board, {3, 2}) == :dark
+    end
+
+    test "preserves the piece type" do
+      board = %Board{} |> Board.put_piece({4, 3}, :dark_king)
+      assert Board.piece_at(board, {4, 3}) == :dark_king
+      assert Board.piece_at(board, {3, 2}) == nil
+
+      board = Board.move_piece(board, {4, 3}, {3, 2})
+
+      assert Board.piece_at(board, {4, 3}) == nil
+      assert Board.piece_at(board, {3, 2}) == :dark_king
+    end
+  end
 end
