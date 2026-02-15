@@ -42,7 +42,7 @@ defmodule Checkers.Rules do
     row_diff = to_row - from_row
     col_diff = abs(to_col - from_col)
 
-    col_diff == 1 and row_diff == forward_direction(piece)
+    col_diff == 1 and valid_row_direction?(piece, row_diff)
   end
 
   @spec valid_jump?(Board.t(), Board.piece(), Board.position(), Board.position()) :: boolean()
@@ -50,9 +50,7 @@ defmodule Checkers.Rules do
     row_diff = to_row - from_row
     col_diff = to_col - from_col
 
-    forward = forward_direction(piece)
-
-    if row_diff == forward * 2 and abs(col_diff) == 2 do
+    if abs(col_diff) == 2 and valid_row_direction?(piece, div(row_diff, 2)) do
       mid = {from_row + div(row_diff, 2), from_col + div(col_diff, 2)}
       mid_piece = Board.piece_at(board, mid)
 
@@ -62,9 +60,10 @@ defmodule Checkers.Rules do
     end
   end
 
-  @spec forward_direction(Board.piece()) :: -1 | 1
-  defp forward_direction(piece) when piece in [:dark, :dark_king], do: 1
-  defp forward_direction(piece) when piece in [:light, :light_king], do: -1
+  @spec valid_row_direction?(Board.piece(), integer()) :: boolean()
+  defp valid_row_direction?(piece, row_diff) when piece in [:dark_king, :light_king], do: row_diff in [-1, 1]
+  defp valid_row_direction?(:dark, row_diff), do: row_diff == 1
+  defp valid_row_direction?(:light, row_diff), do: row_diff == -1
 
   @spec color(Board.piece()) :: color()
   defp color(piece) when piece in [:dark, :dark_king], do: :dark

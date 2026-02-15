@@ -173,4 +173,98 @@ defmodule Checkers.RulesTest do
       assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {4, 3}, {2, 1})
     end
   end
+
+  describe "validate_move/4 - king moves" do
+    test "dark king can move forward" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | D |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({4, 3}, :dark_king)
+
+      assert :ok = Rules.validate_move(board, :dark, {4, 3}, {5, 4})
+      assert :ok = Rules.validate_move(board, :dark, {4, 3}, {5, 2})
+    end
+
+    test "dark king can move backward" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | D |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({4, 3}, :dark_king)
+
+      assert :ok = Rules.validate_move(board, :dark, {4, 3}, {3, 4})
+      assert :ok = Rules.validate_move(board, :dark, {4, 3}, {3, 2})
+    end
+
+    test "light king can move backward (forward for dark)" do
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | L |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({4, 3}, :light_king)
+
+      assert :ok = Rules.validate_move(board, :light, {4, 3}, {5, 4})
+      assert :ok = Rules.validate_move(board, :light, {4, 3}, {5, 2})
+    end
+
+    test "dark king can jump backward over a light piece" do
+      # Dark king at {4,3} jumps backward over light at {3,2}, lands at {2,1}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | l |   | . |   | . |   |
+      # 4 |   | . |   | D |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({4, 3}, :dark_king)
+        |> Board.put_piece({3, 2}, :light)
+
+      assert Board.piece_at(board, {2, 1}) == nil
+
+      assert :ok = Rules.validate_move(board, :dark, {4, 3}, {2, 1})
+    end
+
+    test "light king can jump backward over a dark piece" do
+      # Light king at {3,2} jumps backward (downward) over dark at {4,3}, lands at {5,4}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | . |   | . |   | . |   | . |
+      # 1 | . |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | L |   | . |   | . |   |
+      # 4 |   | . |   | d |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({3, 2}, :light_king)
+        |> Board.put_piece({4, 3}, :dark)
+
+      assert Board.piece_at(board, {5, 4}) == nil
+
+      assert :ok = Rules.validate_move(board, :light, {3, 2}, {5, 4})
+    end
+  end
 end
