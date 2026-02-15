@@ -66,6 +66,17 @@ defmodule Checkers.Board do
   end
 
   @doc """
+  Returns all 64 squares as a list of `{position, piece_or_nil}` tuples,
+  sorted by row then column. Useful for rendering the board as a grid.
+  """
+  @spec to_list(t()) :: [{position(), piece() | nil}]
+  def to_list(%__MODULE__{} = board) do
+    for row <- 0..7, col <- 0..7 do
+      {{row, col}, piece_at(board, {row, col})}
+    end
+  end
+
+  @doc """
   Returns the midpoint between two positions (the jumped square).
   """
   @spec midpoint(position(), position()) :: position()

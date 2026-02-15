@@ -155,4 +155,49 @@ defmodule Checkers.BoardTest do
       assert Board.piece_at(board, {3, 2}) == :dark_king
     end
   end
+
+  describe "to_list/1" do
+    test "returns 64 entries (one per square)" do
+      board = Board.new()
+
+      squares = Board.to_list(board)
+
+      assert length(squares) == 64
+    end
+
+    test "entries are sorted by row then column" do
+      board = Board.new()
+
+      squares = Board.to_list(board)
+      positions = Enum.map(squares, fn {pos, _piece} -> pos end)
+
+      expected = for row <- 0..7, col <- 0..7, do: {row, col}
+      assert positions == expected
+    end
+
+    test "includes pieces at their positions" do
+      board = Board.new()
+
+      squares = Board.to_list(board)
+      squares_map = Map.new(squares)
+
+      # Dark piece at {0,1}
+      assert squares_map[{0, 1}] == :dark
+      # Light piece at {7,0}
+      assert squares_map[{7, 0}] == :light
+      # Empty square at {3,0}
+      assert squares_map[{3, 0}] == nil
+      # Light square (not playable) at {0,0}
+      assert squares_map[{0, 0}] == nil
+    end
+
+    test "works with an empty board" do
+      board = %Board{}
+
+      squares = Board.to_list(board)
+
+      assert length(squares) == 64
+      assert Enum.all?(squares, fn {_pos, piece} -> piece == nil end)
+    end
+  end
 end
