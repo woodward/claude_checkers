@@ -131,15 +131,14 @@ defmodule Checkers.Rules do
   end
 
   @spec valid_jump?(Board.t(), Board.piece(), Board.position(), Board.position()) :: boolean()
-  defp valid_jump?(board, piece, {from_row, from_col}, {to_row, to_col}) do
+  defp valid_jump?(board, piece, {from_row, from_col} = from, {to_row, to_col} = to) do
     row_diff = to_row - from_row
     col_diff = to_col - from_col
 
     if on_board?(to_row, to_col) and abs(col_diff) == 2 and valid_row_direction?(piece, div(row_diff, 2)) do
-      mid = {from_row + div(row_diff, 2), from_col + div(col_diff, 2)}
-      mid_piece = Board.piece_at(board, mid)
+      mid_piece = Board.piece_at(board, Board.midpoint(from, to))
 
-      mid_piece != nil and color(mid_piece) != color(piece) and Board.piece_at(board, {to_row, to_col}) == nil
+      mid_piece != nil and color(mid_piece) != color(piece) and Board.piece_at(board, to) == nil
     else
       false
     end

@@ -66,6 +66,14 @@ defmodule Checkers.Board do
   end
 
   @doc """
+  Returns the midpoint between two positions (the jumped square).
+  """
+  @spec midpoint(position(), position()) :: position()
+  def midpoint({from_row, from_col}, {to_row, to_col}) do
+    {div(from_row + to_row, 2), div(from_col + to_col, 2)}
+  end
+
+  @doc """
   Returns the color (`:dark` or `:light`) of the given piece.
   """
   @spec color(piece()) :: color()

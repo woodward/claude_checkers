@@ -65,10 +65,9 @@ defmodule Checkers.Game do
   end
 
   @spec maybe_remove_captured(Board.t(), Board.position(), Board.position()) :: Board.t()
-  defp maybe_remove_captured(board, {from_row, from_col}, {to_row, to_col}) do
+  defp maybe_remove_captured(board, {from_row, _} = from, {to_row, _} = to) do
     if abs(to_row - from_row) == 2 do
-      mid = {div(from_row + to_row, 2), div(from_col + to_col, 2)}
-      Board.remove_piece(board, mid)
+      Board.remove_piece(board, Board.midpoint(from, to))
     else
       board
     end
