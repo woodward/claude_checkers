@@ -16,12 +16,12 @@ defmodule Checkers.GameServer do
   Starts a GameServer. Accepts an optional `:name` option.
   """
   def start_link(opts \\ []) do
-    {name, opts} = Keyword.pop(opts, :name)
+    {name, _rest} = Keyword.pop(opts, :name)
 
     if name do
-      GenServer.start_link(__MODULE__, opts, name: name)
+      GenServer.start_link(__MODULE__, [name: name], name: name)
     else
-      GenServer.start_link(__MODULE__, opts)
+      GenServer.start_link(__MODULE__, [])
     end
   end
 
@@ -74,8 +74,9 @@ defmodule Checkers.GameServer do
   # --- Server Callbacks ---
 
   @impl true
-  def init(_opts) do
-    {:ok, initial_state()}
+  def init(opts) do
+    name = Keyword.get(opts, :name)
+    {:ok, Map.put(initial_state(), :name, name)}
   end
 
   @impl true
@@ -104,8 +105,8 @@ defmodule Checkers.GameServer do
     end
   end
 
-  def handle_call(:reset, _from, _state) do
-    new_state = initial_state()
+  def handle_call(:reset, _from, state) do
+    new_state = Map.put(initial_state(), :name, state.name)
     broadcast(new_state)
     {:reply, :ok, new_state}
   end
@@ -139,7 +140,7 @@ defmodule Checkers.GameServer do
   defp broadcast(state) do
     Phoenix.PubSub.broadcast(
       Checkers.PubSub,
-      topic(self()),
+      topic(state.name || self()),
       {:game_updated, %{game: state.game, players: state.players}}
     )
   end

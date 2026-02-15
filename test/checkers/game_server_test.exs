@@ -5,8 +5,9 @@ defmodule Checkers.GameServerTest do
 
   setup do
     # Start a fresh GameServer for each test
-    server = start_supervised!({GameServer, name: :"test_server_#{System.unique_integer()}"})
-    %{server: server}
+    name = :"test_server_#{System.unique_integer()}"
+    server = start_supervised!({GameServer, name: name})
+    %{server: server, name: name}
   end
 
   describe "join/2" do
@@ -77,22 +78,22 @@ defmodule Checkers.GameServerTest do
       assert {:error, :not_your_turn} = GameServer.move(server, "unknown", {2, 1}, {3, 0})
     end
 
-    test "broadcasts game_updated after a successful move", %{server: server} do
+    test "broadcasts game_updated after a successful move", %{server: server, name: name} do
       {:ok, :dark} = GameServer.join(server, "player-1")
       {:ok, :light} = GameServer.join(server, "player-2")
 
-      Phoenix.PubSub.subscribe(Checkers.PubSub, "game:#{inspect(server)}")
+      Phoenix.PubSub.subscribe(Checkers.PubSub, GameServer.topic(name))
 
       {:ok, _game} = GameServer.move(server, "player-1", {2, 1}, {3, 0})
 
       assert_receive {:game_updated, %{game: %Checkers.Game{turn: :light}}}
     end
 
-    test "does not broadcast on a failed move", %{server: server} do
+    test "does not broadcast on a failed move", %{server: server, name: name} do
       {:ok, :dark} = GameServer.join(server, "player-1")
       {:ok, :light} = GameServer.join(server, "player-2")
 
-      Phoenix.PubSub.subscribe(Checkers.PubSub, "game:#{inspect(server)}")
+      Phoenix.PubSub.subscribe(Checkers.PubSub, GameServer.topic(name))
 
       # Invalid move
       {:error, _} = GameServer.move(server, "player-1", {2, 1}, {5, 0})
@@ -118,8 +119,8 @@ defmodule Checkers.GameServerTest do
   end
 
   describe "topic/1" do
-    test "returns the PubSub topic for a server", %{server: server} do
-      assert GameServer.topic(server) == "game:#{inspect(server)}"
+    test "returns the PubSub topic for a server name", %{name: name} do
+      assert GameServer.topic(name) == "game:#{inspect(name)}"
     end
   end
 end
