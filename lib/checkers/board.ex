@@ -9,6 +9,7 @@ defmodule Checkers.Board do
 
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type piece :: :dark | :light | :dark_king | :light_king
+  @type color :: :dark | :light
   @type t :: %__MODULE__{pieces: %{optional(position()) => piece()}}
 
   defstruct pieces: %{}
@@ -63,4 +64,11 @@ defmodule Checkers.Board do
     |> remove_piece(from)
     |> put_piece(to, piece)
   end
+
+  @doc """
+  Returns the color (`:dark` or `:light`) of the given piece.
+  """
+  @spec color(piece()) :: color()
+  def color(piece) when piece in [:dark, :dark_king], do: :dark
+  def color(piece) when piece in [:light, :light_king], do: :light
 end

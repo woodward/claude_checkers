@@ -5,7 +5,7 @@ defmodule Checkers.Rules do
 
   alias Checkers.Board
 
-  @type color :: :dark | :light
+  @type color :: Board.color()
   @type error ::
           :no_piece_at_source
           | :not_your_piece
@@ -14,6 +14,36 @@ defmodule Checkers.Rules do
           | :must_continue_jump
           | :jump_available
           | :game_over
+
+  @doc """
+  Validates a move within the context of a game, accounting for
+  multi-jump chains and mandatory capture.
+  """
+  @spec validate_game_move(Board.t(), color(), Board.position(), Board.position(), Board.position() | nil) ::
+          :ok | {:error, error()}
+  def validate_game_move(board, turn, from, to, must_jump_from) do
+    cond do
+      must_jump_from != nil and from != must_jump_from ->
+        {:error, :must_continue_jump}
+
+      must_jump_from != nil ->
+        case validate_move(board, turn, from, to) do
+          :ok -> if jump?(from, to), do: :ok, else: {:error, :must_continue_jump}
+          error -> error
+        end
+
+      true ->
+        case validate_move(board, turn, from, to) do
+          :ok ->
+            if not jump?(from, to) and any_jumps_for_color?(board, turn),
+              do: {:error, :jump_available},
+              else: :ok
+
+          error ->
+            error
+        end
+    end
+  end
 
   @doc """
   Validates whether a move from `from` to `to` is legal for the given board and turn.
@@ -74,6 +104,12 @@ defmodule Checkers.Rules do
     end)
   end
 
+  @doc """
+  Returns true if the move from `from` to `to` is a jump (row distance of 2).
+  """
+  @spec jump?(Board.position(), Board.position()) :: boolean()
+  def jump?({from_row, _}, {to_row, _}), do: abs(to_row - from_row) == 2
+
   @spec any_simple_moves?(Board.t(), Board.piece(), Board.position()) :: boolean()
   defp any_simple_moves?(board, piece, {row, col}) do
     move_targets = [{row + 1, col + 1}, {row + 1, col - 1}, {row - 1, col + 1}, {row - 1, col - 1}]
@@ -117,7 +153,5 @@ defmodule Checkers.Rules do
   defp valid_row_direction?(:dark, row_diff), do: row_diff == 1
   defp valid_row_direction?(:light, row_diff), do: row_diff == -1
 
-  @spec color(Board.piece()) :: color()
-  defp color(piece) when piece in [:dark, :dark_king], do: :dark
-  defp color(piece) when piece in [:light, :light_king], do: :light
+  defp color(piece), do: Board.color(piece)
 end
