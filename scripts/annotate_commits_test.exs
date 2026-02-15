@@ -10,9 +10,10 @@ defmodule CommitAnnotatorTest do
     String.trim(output)
   end
 
-  # Sets up a git repo with a bare remote and one pushed commit,
-  # returns %{work_dir: ..., bare_dir: ...}
-  defp setup_repo(tmp_dir) do
+  # Sets up a git repo with a bare remote and one pushed commit.
+  # Used as an ExUnit setup callback: receives context with :tmp_dir,
+  # returns [work_dir: work_dir] to merge into the test context.
+  defp setup_repo(%{tmp_dir: tmp_dir}) do
     bare_dir = Path.join(tmp_dir, "remote.git")
     work_dir = Path.join(tmp_dir, "repo")
 
@@ -27,7 +28,7 @@ defmodule CommitAnnotatorTest do
     git(work_dir, ["commit", "-m", "Initial commit"])
     git(work_dir, ["push", "-u", "origin", "HEAD"])
 
-    %{work_dir: work_dir, bare_dir: bare_dir}
+    [work_dir: work_dir]
   end
 
   # Gets the short SHA and formatted timestamp for a commit
@@ -154,18 +155,13 @@ defmodule CommitAnnotatorTest do
       assert String.starts_with?(annotation, "\n\n---\n\n## Chat Transcript\n\n")
     end
 
-    test "idempotency check detects already-annotated message" do
-      original = "Fix a bug\n\n---\n\n## Chat Transcript\n\nSome chat here"
-
-      assert CommitAnnotator.already_annotated?(original)
-      refute CommitAnnotator.already_annotated?("Fix a bug\n\nJust a normal message body")
-    end
   end
 
   describe "annotate_commits/2 integration" do
+    setup :setup_repo
+
     @tag :tmp_dir
-    test "annotates unpushed commits with matching transcript chat", %{tmp_dir: tmp_dir} do
-      %{work_dir: work_dir} = setup_repo(tmp_dir)
+    test "annotates unpushed commits with matching transcript chat", %{work_dir: work_dir} do
 
       # Make two unpushed commits
       File.write!(Path.join(work_dir, "file1.txt"), "hello")
@@ -226,8 +222,44 @@ defmodule CommitAnnotatorTest do
     end
 
     @tag :tmp_dir
-    test "is idempotent — running twice does not double-annotate", %{tmp_dir: tmp_dir} do
-      %{work_dir: work_dir} = setup_repo(tmp_dir)
+    test "dry run shows what would be annotated without modifying commits", %{work_dir: work_dir} do
+
+      # Make one unpushed commit
+      File.write!(Path.join(work_dir, "file1.txt"), "hello")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file1"])
+
+      {sha, ts} = commit_info(work_dir)
+
+      transcript = """
+      **User**
+
+      Please add file1
+
+      ---
+
+      **Cursor**
+
+      Added file1.
+
+      Committed: `#{sha}` at #{ts} — Add file1
+      """
+
+      # Run in dry-run mode
+      output = capture_io(fn -> CommitAnnotator.annotate_commits(work_dir, transcript, dry_run: true) end)
+
+      # Should mention the commit that would be annotated
+      assert output =~ sha
+      assert output =~ "Add file1"
+      assert output =~ "dry run"
+
+      # Commit message should NOT have been modified
+      msg = git(work_dir, ["log", "--format=%B", "-1"])
+      refute msg =~ "## Chat Transcript"
+    end
+
+    @tag :tmp_dir
+    test "is idempotent — running twice does not double-annotate", %{work_dir: work_dir} do
 
       # Make one unpushed commit
       File.write!(Path.join(work_dir, "file1.txt"), "hello")
@@ -259,6 +291,135 @@ defmodule CommitAnnotatorTest do
       occurrences = msg |> String.split("## Chat Transcript") |> length()
       # If split produces 2 parts, there's exactly 1 occurrence
       assert occurrences == 2, "Expected exactly 1 annotation marker, got #{occurrences - 1}"
+    end
+
+    @tag :tmp_dir
+    test "prints summary with matched and unmatched commit counts", %{work_dir: work_dir} do
+
+      # Make three unpushed commits, but only two will have transcript markers
+      File.write!(Path.join(work_dir, "file1.txt"), "hello")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file1"])
+
+      File.write!(Path.join(work_dir, "file2.txt"), "world")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file2"])
+
+      File.write!(Path.join(work_dir, "file3.txt"), "no marker for this one")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file3"])
+
+      # Only get SHAs for first two commits (skip=2 and skip=1)
+      {sha1, ts1} = commit_info(work_dir, 2)
+      {sha2, ts2} = commit_info(work_dir, 1)
+
+      transcript = """
+      **User**
+
+      Please add file1
+
+      ---
+
+      **Cursor**
+
+      Added file1.
+
+      Committed: `#{sha1}` at #{ts1} — Add file1
+
+      ---
+
+      **User**
+
+      Now add file2
+
+      ---
+
+      **Cursor**
+
+      Added file2.
+
+      Committed: `#{sha2}` at #{ts2} — Add file2
+      """
+
+      output = capture_io(fn -> CommitAnnotator.annotate_commits(work_dir, transcript) end)
+
+      # Should show parsed segment count
+      assert output =~ "2 segment(s)"
+      # Should show how many were annotated
+      assert output =~ "Annotated 2"
+      # Should show how many unpushed had no match
+      assert output =~ "1 unpushed commit(s) had no matching transcript marker"
+    end
+
+    @tag :tmp_dir
+    test "default mode skips already-pushed commits", %{work_dir: work_dir} do
+      # Make a commit and push it
+      File.write!(Path.join(work_dir, "file1.txt"), "hello")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file1"])
+      git(work_dir, ["push"])
+
+      {sha, ts} = commit_info(work_dir)
+
+      transcript = """
+      **User**
+
+      Please add file1
+
+      ---
+
+      **Cursor**
+
+      Added file1.
+
+      Committed: `#{sha}` at #{ts} — Add file1
+      """
+
+      output = capture_io(fn -> CommitAnnotator.annotate_commits(work_dir, transcript) end)
+
+      # Should find no matches since the commit is already pushed
+      assert output =~ "No matching commits"
+
+      # Commit message should NOT have been modified
+      msg = git(work_dir, ["log", "--format=%B", "-1"])
+      refute msg =~ "## Chat Transcript"
+    end
+
+    @tag :tmp_dir
+    test "force mode annotates already-pushed commits", %{work_dir: work_dir} do
+      # Make a commit and push it
+      File.write!(Path.join(work_dir, "file1.txt"), "hello")
+      git(work_dir, ["add", "."])
+      git(work_dir, ["commit", "-m", "Add file1"])
+      git(work_dir, ["push"])
+
+      {sha, ts} = commit_info(work_dir)
+
+      transcript = """
+      **User**
+
+      Please add file1
+
+      ---
+
+      **Cursor**
+
+      Added file1.
+
+      Committed: `#{sha}` at #{ts} — Add file1
+      """
+
+      output = capture_io(fn -> CommitAnnotator.annotate_commits(work_dir, transcript, force: true) end)
+
+      # Should warn about force mode
+      assert output =~ "force"
+      # Should show it annotated a commit
+      assert output =~ "Annotated 1"
+
+      # Commit message should have the annotation
+      msg = git(work_dir, ["log", "--format=%B", "-1"])
+      assert msg =~ "## Chat Transcript"
+      assert msg =~ "Please add file1"
     end
   end
 end
