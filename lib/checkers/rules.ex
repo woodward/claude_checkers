@@ -64,6 +64,9 @@ defmodule Checkers.Rules do
   end
 
   @spec valid_simple_move?(Board.piece(), Board.position(), Board.position()) :: boolean()
+  defp valid_simple_move?(_piece, {_from_row, _from_col}, {to_row, to_col}) when to_row not in 0..7 or to_col not in 0..7,
+    do: false
+
   defp valid_simple_move?(piece, {from_row, from_col}, {to_row, to_col}) do
     row_diff = to_row - from_row
     col_diff = abs(to_col - from_col)
@@ -76,15 +79,18 @@ defmodule Checkers.Rules do
     row_diff = to_row - from_row
     col_diff = to_col - from_col
 
-    if abs(col_diff) == 2 and valid_row_direction?(piece, div(row_diff, 2)) do
+    if on_board?(to_row, to_col) and abs(col_diff) == 2 and valid_row_direction?(piece, div(row_diff, 2)) do
       mid = {from_row + div(row_diff, 2), from_col + div(col_diff, 2)}
       mid_piece = Board.piece_at(board, mid)
 
-      mid_piece != nil and color(mid_piece) != color(piece)
+      mid_piece != nil and color(mid_piece) != color(piece) and Board.piece_at(board, {to_row, to_col}) == nil
     else
       false
     end
   end
+
+  @spec on_board?(integer(), integer()) :: boolean()
+  defp on_board?(row, col), do: row in 0..7 and col in 0..7
 
   @spec valid_row_direction?(Board.piece(), integer()) :: boolean()
   defp valid_row_direction?(piece, row_diff) when piece in [:dark_king, :light_king], do: row_diff in [-1, 1]

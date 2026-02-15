@@ -267,4 +267,130 @@ defmodule Checkers.RulesTest do
       assert :ok = Rules.validate_move(board, :light, {3, 2}, {5, 4})
     end
   end
+
+  describe "validate_move/4 - board boundaries" do
+    test "rejects a jump that would land off the board" do
+      # Dark at {0,1} has light at {1,0} to jump over, but landing {2,-1} is off the board
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | d |   | . |   | . |   | . |
+      # 1 | l |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({0, 1}, :dark)
+        |> Board.put_piece({1, 0}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {0, 1}, {2, -1})
+    end
+
+    test "any_jumps? returns false when all jumps would land off the board" do
+      # Dark at {0,1} has light at {1,0}, but the only jump lands at {2,-1} (off board)
+      # The other direction {1,2} has no piece to jump over
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | d |   | . |   | . |   | . |
+      # 1 | l |   | . |   | . |   | . |   |
+      # 2 |   | . |   | . |   | . |   | . |
+      # 3 | . |   | . |   | . |   | . |   |
+      # 4 |   | . |   | . |   | . |   | . |
+      # 5 | . |   | . |   | . |   | . |   |
+      # 6 |   | . |   | . |   | . |   | . |
+      # 7 | . |   | . |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({0, 1}, :dark)
+        |> Board.put_piece({1, 0}, :light)
+
+      refute Rules.any_jumps?(board, :dark, {0, 1})
+    end
+
+    test "rejects a simple move off the bottom of the board" do
+      # Dark at {7,6} tries to move to {8,7} — off the board
+      #
+      #     0   1   2   3   4   5   6   7
+      # 7 | . |   | . |   | . |   | d |   |
+      board = %Board{} |> Board.put_piece({7, 6}, :dark)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {7, 6}, {8, 7})
+    end
+
+    test "rejects a simple move off the top of the board" do
+      # Light at {0,1} tries to move to {-1,0} — off the board
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | l |   | . |   | . |   | . |
+      board = %Board{} |> Board.put_piece({0, 1}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :light, {0, 1}, {-1, 0})
+    end
+
+    test "rejects a simple move off the right of the board" do
+      # Dark at {2,7} tries to move to {3,8} — off the board
+      #
+      #     0   1   2   3   4   5   6   7
+      # 2 |   | . |   | . |   | . |   | d |
+      board = %Board{} |> Board.put_piece({2, 7}, :dark)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {2, 7}, {3, 8})
+    end
+
+    test "rejects a simple move off the left of the board" do
+      # Light at {5,0} tries to move to {4,-1} — off the board
+      #
+      #     0   1   2   3   4   5   6   7
+      # 5 | l |   | . |   | . |   | . |   |
+      board = %Board{} |> Board.put_piece({5, 0}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :light, {5, 0}, {4, -1})
+    end
+
+    test "rejects a jump landing beyond row 7" do
+      # Dark at {6,5} with light at {7,6} — jump would land at {8,7}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 6 |   | . |   | . |   | d |   | . |
+      # 7 | . |   | . |   | . |   | l |   |
+      board =
+        %Board{}
+        |> Board.put_piece({6, 5}, :dark)
+        |> Board.put_piece({7, 6}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {6, 5}, {8, 7})
+    end
+
+    test "rejects a jump landing below row 0" do
+      # Light at {1,2} with dark at {0,1} — jump would land at {-1,0}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 0 |   | d |   | . |   | . |   | . |
+      # 1 | . |   | l |   | . |   | . |   |
+      board =
+        %Board{}
+        |> Board.put_piece({1, 2}, :light)
+        |> Board.put_piece({0, 1}, :dark)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :light, {1, 2}, {-1, 0})
+    end
+
+    test "rejects a jump landing beyond col 7" do
+      # Dark at {2,7} with light at {3,6} — jump would land at {4,5}... wait,
+      # that's on the board. Let's use dark at {5,6} with light at {6,7} → {7,8}
+      #
+      #     0   1   2   3   4   5   6   7
+      # 5 | . |   | . |   | . |   | d |   |
+      # 6 |   | . |   | . |   | . |   | l |
+      board =
+        %Board{}
+        |> Board.put_piece({5, 6}, :dark)
+        |> Board.put_piece({6, 7}, :light)
+
+      assert {:error, :invalid_move} = Rules.validate_move(board, :dark, {5, 6}, {7, 8})
+    end
+  end
 end
