@@ -4,25 +4,25 @@ overview: Model American Checkers as pure Elixir data structures and functions i
 todos:
   - id: board
     content: Implement Checkers.Board module with board representation, starting position, and piece helpers
-    status: pending
+    status: completed
   - id: board-tests
     content: Write tests for Checkers.Board
-    status: pending
+    status: completed
   - id: rules
     content: Implement Checkers.Rules module with move generation, captures, multi-jumps, promotion, and game-over detection
-    status: pending
+    status: completed
   - id: rules-tests
     content: Write tests for Checkers.Rules
-    status: pending
+    status: completed
   - id: game
     content: Implement Checkers.Game module with game state struct and public API
-    status: pending
+    status: completed
   - id: game-tests
     content: Write tests for Checkers.Game
-    status: pending
+    status: completed
   - id: precommit
     content: Run mix precommit to verify everything passes
-    status: pending
+    status: completed
 isProject: false
 ---
 
